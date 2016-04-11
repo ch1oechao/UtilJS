@@ -7,6 +7,8 @@
 
   function Util() {
 
+    var queue = [], paused = false, results;
+
     this.isArray = function(arr) {
       return Object.prototype.toString.call(arr) === '[object Array]';
     };
@@ -255,6 +257,60 @@
       }
     }
 
+  }
+
+  this.log = function() {
+    try {
+      console.log.apply(console, arguments);
+    } catch(e) {
+      try {
+        opera.postError.apply(opera, arguments);
+      } catch(e) {
+        alert(Array.prototype.join.call(arguments, ' '));
+      }
+    }
+  }
+
+  this.error = function() {
+    try {
+      console.error.apply(console, arguments);
+    } catch(e) {
+      try {
+        JSTracker.error.apply(JSTracker, arguments);
+      } catch(e) {
+        alert(Array.prototype.join.call(arguments, ' '));
+      }
+    }
+  }
+
+  this.assert = function assert(value, desc) {
+    (value) ? this.log(desc) : this.error(desc); 
+  }
+
+  this.paused = function() {
+    paused = true;
+  }
+
+  this.resume = function() {
+    paused = false;
+    setTimeout(runTest, 1);
+  }
+
+  function runTest() {
+    if (!paused && queue.length) {
+      queue.shift()();
+      if (!paused) {
+        this.resume();
+      }
+    }
+  }
+  // 异步测试
+  this.test = function(name, fn) {
+    var self = this;
+    queue.push(function() {
+      results = self.assert(true, name);
+      if (typeof fn === 'function') fn();
+    });
   }
   
   global.Util = new Util();
